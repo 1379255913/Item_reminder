@@ -31,7 +31,7 @@ def createobject():
         type = type.split("/")
         if not all([username, information, expiration_time, t, type]):
             return bad_request('missing param')
-        expiration_time = datetime.datetime.strptime(expiration_time, '%Y-%m-%d')
+        expiration_time = datetime.datetime.strptime(expiration_time, '%Y-%m-%d %H:%M:%S')
         reminder_time = expiration_time - datetime.timedelta(seconds=int(t))
         time = expiration_time - datetime.datetime.now()
         k = time.days * 86400 + time.seconds
@@ -86,7 +86,7 @@ def modifyobject():
             return bad_request('missing param')
         try:
             if expiration_time and t:
-                expiration_time = datetime.datetime.strptime(expiration_time, '%Y-%m-%d')
+                expiration_time = datetime.datetime.strptime(expiration_time, '%Y-%m-%d %H:%M:%S')
                 reminder_time = expiration_time - datetime.timedelta(seconds=int(t))
                 time = expiration_time - datetime.datetime.now()
                 k = time.days * 86400 + time.seconds
@@ -250,19 +250,25 @@ def queryallobjecttype():
 # 查询用户所有的Object
 @main.route("/queryuserobject", methods=['POST'])
 def queryuserobject():
-    username = request.get_json().get('username')
-    state = request.get_json().get('state')
+    username = request.get_json()['username']
+    state = request.get_json()['state']
+    page = request.get_json()['page']
+    if not page:page=1
+    else:page=int(page)
     if not all([username]):
         return bad_request('missing param')
     if state and state not in ['已过期', '快过期', '未过期']:
         return bad_request('param error')
     if not state:
         pagination = db.session.query(Object).filter(Object.username == username).order_by(
-            Object.expiration_time).all()
+            Object.expiration_time).paginate(page, per_page=10,
+                                             error_out=False)
     else:
         pagination = db.session.query(Object).filter(and_(Object.username == username, Object.state == state)).order_by(
-            Object.expiration_time).all()
-    for j in pagination:
+            Object.expiration_time).paginate(page, per_page=10,
+                                             error_out=False)
+    posts = pagination.items
+    for j in posts:
         if j.expiration_time < datetime.datetime.now():
             j.state = '已过期'
         elif j.reminder_time < datetime.datetime.now():
@@ -270,9 +276,17 @@ def queryuserobject():
         else:
             j.state = '未过期'
     db.session.commit()
+    prev = None
+    if pagination.has_prev:
+        prev = page - 1
+    next = None
+    if pagination.has_next:
+        next = page + 1
     return jsonify({'data': {
-        'posts': [post.to_json() for post in pagination],
-        'count': len(pagination),
+        'posts': [post.to_json() for post in posts],
+        'prev': prev,
+        'next': next,
+        'count': pagination.total,
     }
         , 'message': 'OK', 'code': 200}
     )
@@ -282,10 +296,15 @@ def queryuserobject():
 @main.route("/queryobjecttype", methods=['POST'])
 def queryobjecttype():
     id = request.get_json()['id']
+    page = request.get_json()['page']
+    if not page:page=1
+    else:page=int(page)
     pagination = db.session.query(Object).filter(Object.obt.any(ObjectType.id == id)).order_by(
-        Object.expiration_time).all()
+        Object.expiration_time).paginate(page, per_page=10,
+                                         error_out=False)
     # str1 = db.session.query(Object).join(ObjectType, Object.obt).filter(ObjectType.id==id).all()
-    for j in pagination:
+    posts = pagination.items
+    for j in posts:
         if j.expiration_time < datetime.datetime.now():
             j.state = '已过期'
         elif j.reminder_time < datetime.datetime.now():
@@ -293,10 +312,18 @@ def queryobjecttype():
         else:
             j.state = '未过期'
     db.session.commit()
+    prev = None
+    if pagination.has_prev:
+        prev = page - 1
+    next = None
+    if pagination.has_next:
+        next = page + 1
     str2 = db.session.query(ObjectType).filter(ObjectType.id == id).all()
     return jsonify({'data': {
         'type': [post.to_json() for post in str2][0],
-        'posts': [post.to_json() for post in pagination],
+        'posts': [post.to_json() for post in posts],
+        'prev': prev,
+        'next': next,
         'count': pagination.total,
     }, 'message': 'OK', 'code': 200}
     )

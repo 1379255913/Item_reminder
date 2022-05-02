@@ -33,8 +33,8 @@ def login_status():
 @main.route("/login", methods=['POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.get_json()['username']
+        password = request.get_json()['password']
         if not all([username, password]):
             return bad_request('missing param')
         try:
@@ -52,20 +52,21 @@ def login():
                 return response
             else:
                 return bad_request('password error')
-        except Exception as e:
-            raise e
+        except Exception:
+            return servererror('Internal server error')
 
 
 # 注册
 @main.route("/register", methods=['POST'])
 def register():
     if request.method == 'POST':
-        username = request.form.get('username')
-        nickname = request.form.get('nickname')
-        password_1 = request.form.get('password_1')
-        password_2 = request.form.get('password_2')
+        username = request.get_json()['username']
+        nickname = request.get_json()['nickname']
+        password_1 = request.get_json()['password_1']
+        password_2 = request.get_json()['password_2']
         if not all([username, nickname, password_1, password_2]):
             return bad_request('missing param')
+        if password_1!=password_2: return bad_request('两次密码输入不一致')
         password = generate_password_hash(password_1, method="pbkdf2:sha256", salt_length=8)
         try:
             str1 = UserInformation.query.filter_by(username=username).first()
@@ -82,5 +83,5 @@ def register():
                 )
                 response.status_code = 200
                 return response
-        except Exception as e:
-            raise e
+        except Exception:
+            return servererror('Internal server error')

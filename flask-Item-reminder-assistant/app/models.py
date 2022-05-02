@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import datetime
 from flask_sqlalchemy import SQLAlchemy
 import pymysql
 
@@ -46,16 +47,19 @@ class Object(db.Model):
         return "Role: %s %s %s %s %s %s" % (
         self.username, self.information, self.expiration_time, self.reminder_time,self.state,self.id,)
 #self.userinformation.nickname
+    def change(self,x):
+        return str(x)[0:10]
     def to_json(self):
         json_user = {
             'username': self.username,
             'information': self.information,
-            'expiration_time': self.expiration_time,
-            'reminder_time': self.reminder_time,
+            'expiration_time': self.change(self.expiration_time),
+            'reminder_time': self.change(self.reminder_time),
             'state': self.state,
             'id': self.id,
             'nickname': self.userinformation.nickname,
-            'type':[j.type for j in self.obt],
+            'type':[j.type for j in self.obt][0],
+            'type_id':[j.id for j in self.obt][0]
         }
         return json_user
 
@@ -87,6 +91,7 @@ class ObjectType(db.Model):
             'orderlist': self.orderlist,
             'id': self.id,
             'nickname': self.userinformation.nickname,
+            'count': len(self.objects),
         }
         return json_user
 
