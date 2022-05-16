@@ -19,6 +19,11 @@ def forbidden(message):
     response.status_code = 200
     return response
 
+def missed(message):
+    response = jsonify({'error': 'not_found', 'message': message,'code':404})
+    response.status_code = 200
+    return response
+
 def servererror(message):
     response = jsonify({'error': 'servererror', 'message': message, 'code':500})
     response.status_code = 200

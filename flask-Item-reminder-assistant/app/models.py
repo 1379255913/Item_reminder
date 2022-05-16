@@ -38,21 +38,28 @@ class Object(db.Model):
 
     username = db.Column(db.String(40),db.ForeignKey('userinformation.username') ,nullable=False)
     information = db.Column(db.Text, nullable=False)
+    manufacture_time = db.Column(db.DateTime)
+    fresh_time_number = db.Column(db.String(20))
+    fresh_time_unit = db.Column(db.String(3))
     expiration_time = db.Column(db.DateTime, nullable=False)
     reminder_time = db.Column(db.DateTime, nullable=False)
     state = db.Column(db.String(20), nullable=False)
     id = db.Column(db.String(128), primary_key=True)
     obt = db.relationship("ObjectType",backref="objects",secondary="connect")
     def __repr__(self):
-        return "Role: %s %s %s %s %s %s" % (
-        self.username, self.information, self.expiration_time, self.reminder_time,self.state,self.id,)
+        return "Role: %s %s %s %s %s %s %s %s %s" % (
+        self.username, self.information, self.expiration_time, self.reminder_time,self.state,self.id,self.manufacture_time,self.fresh_time_number,self.fresh_time_unit)
 #self.userinformation.nickname
     def change(self,x):
-        return str(x)[0:10]
+        if x:return str(x)[0:10]
+        return ""
     def to_json(self):
         json_user = {
             'username': self.username,
             'information': self.information,
+            'manufacture_time':self.change(self.manufacture_time),
+            'fresh_time_number' : self.fresh_time_number,
+            'fresh_time_unit' : self.fresh_time_unit,
             'expiration_time': self.change(self.expiration_time),
             'reminder_time': self.change(self.reminder_time),
             'state': self.state,

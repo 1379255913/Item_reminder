@@ -1,7 +1,9 @@
 from flask import *
 import config2
 from models import db
+from flask_cors import *
 app = Flask(__name__)
+CORS(app, supports_credentials = True)
 app.config.from_object(config2)
 db.init_app(app)
 
